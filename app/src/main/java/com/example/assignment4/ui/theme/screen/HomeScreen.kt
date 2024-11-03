@@ -12,12 +12,14 @@ import com.example.assignment4.model.Picture
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -58,6 +60,7 @@ fun HomeScreen(
     val uiState = viewModel.marsUiState
     val uiStatePicSum = viewModel.picturesUiState
     val rollsState = viewModel.rollsUiState
+    val pictureTaken = viewModel.picTakenUiState
     val context = LocalContext.current
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
     val file = remember { context.createImageFile() }
@@ -76,7 +79,6 @@ fun HomeScreen(
             }
         }
     )
-    Column {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -93,22 +95,8 @@ fun HomeScreen(
         if (uiStatePicSum.currentPicture != null)
             PicPhotoCard(
                 modifier = Modifier.weight(1f),
-                picture = uiStatePicSum.currentPicture)
-        Row(
-            modifier = Modifier
-                .weight(0.5f)
-                .fillMaxWidth()
-                .padding(top = 16.dp),
-            horizontalArrangement = Arrangement.SpaceAround
-        ){
-            ActionButton({ viewModel.rollPicture() },{ viewModel.rollPictureMars() },"Roll")
-            ActionButton({ viewModel.applyBlur() },{},"Blur")
-            ActionButton({ viewModel.applyGrayScale() },{},"Gray")
-            ActionButton({ viewModel.savePicture() },{},"Save")
-            ActionButton({ viewModel.readDataFromFirebase() },{},"Load")
-
-        }
-        Text(text = "Rolls Retrieved: ${rollsState.rolls}")
+                picture = uiStatePicSum.currentPicture
+            )
         Row(
             modifier = Modifier
                 .weight(1f)
@@ -135,16 +123,52 @@ fun HomeScreen(
                 Text(text = "Take Photo")
             }
         }
-        if (capturedImageUri != null) {
-            AsyncImage(
-                model = capturedImageUri,
-                contentDescription = "Captured Photo",
-                modifier = Modifier
-                    .size(300.dp)
-                    .padding(16.dp)
-            )
+        Row  (modifier = Modifier
+                .wrapContentWidth()
+                .padding(16.dp)
+        ){
+            if (capturedImageUri != null) {
+                viewModel.updatePhotoTaken(capturedImageUri.toString())
+                AsyncImage(
+                    model = capturedImageUri,
+                    contentDescription = "Captured Photo",
+                    modifier = Modifier
+                        .weight(1f)
+                        .size(300.dp)
+                        .padding(16.dp)
+                )
+            }
+            if (pictureTaken.uri.isNotEmpty()) {
+                Box(modifier = Modifier
+                    .weight(1f)
+                ) {
+                    AsyncImage(
+                        model = pictureTaken.uri,
+                        contentDescription = "Saved Photo",
+                        modifier = Modifier
+                            .size(300.dp)
+                            .padding(16.dp)
+                    )
+                    Text(text = "Saved Before")
+                }
+            }
         }
-    }
+
+        Row(
+            modifier = Modifier
+                .weight(0.5f)
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.SpaceAround
+        ){
+            ActionButton(modifier = Modifier.weight(1f),{ viewModel.rollPicture() },{ viewModel.rollPictureMars() },"Roll")
+            ActionButton(modifier = Modifier.weight(1f),{ viewModel.applyBlur() },{},"Blur")
+            ActionButton(modifier = Modifier.weight(1f),{ viewModel.applyGrayScale() },{},"Gray")
+            ActionButton(modifier = Modifier.weight(1f),{ viewModel.savePicture() },{},"Save")
+            ActionButton(modifier = Modifier.weight(1f),{ viewModel.readDataFromFirebase() },{},"Load")
+
+        }
+        Text(text = "Rolls Retrieved: ${rollsState.rolls}")
     }
 }
 
@@ -195,7 +219,7 @@ fun PicPhotoCard(picture: Picture, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ActionButton(actionFunction:() -> Unit,actionFunction1:() -> Unit = {}, buttonMessage: String){
+fun ActionButton(modifier: Modifier = Modifier,actionFunction:() -> Unit,actionFunction1:() -> Unit = {}, buttonMessage: String){
     Button(onClick = {
         actionFunction()
         actionFunction1()

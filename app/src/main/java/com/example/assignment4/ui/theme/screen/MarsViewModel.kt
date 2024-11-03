@@ -1,13 +1,9 @@
 package com.example.assignment4.ui.theme.screen
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.app.ActivityCompat.startActivityForResult
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -22,7 +18,6 @@ import com.example.assignment4.model.Picture
 import com.example.assignment4.model.PicturesSavedInformation
 import com.example.assignment4.network.DataCallback
 import com.example.assignment4.network.FireBaseAccess
-import com.google.firebase.Firebase
 import kotlinx.coroutines.launch
 
 
@@ -130,6 +125,10 @@ class MarsViewModel(
         }
     }
 
+    fun updatePhotoTaken(uri: String){
+        picTakenUiState = picTakenUiState.copy(uri = uri)
+    }
+
     fun readDataFromFirebase(){
         FireBaseAccess()
             .readData(object : DataCallback {
@@ -140,8 +139,8 @@ class MarsViewModel(
 
                     picturesUiState = picturesUiState.copy(currentPicture = picture)
                     marsUiState = marsUiState.copy(currentPhoto = mars)
-                    rollsUiState = rollsUiState.copy(data.rolls)
-                    picTakenUiState = picTakenUiState.copy(data.capturePhoto)
+                    rollsUiState = rollsUiState.copy(rolls = data.rolls)
+                    picTakenUiState = picTakenUiState.copy(uri = data.capturePhoto)
 
                     Log.i("Firebase","Received Data")
                 } else {

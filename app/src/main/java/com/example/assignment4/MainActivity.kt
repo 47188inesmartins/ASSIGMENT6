@@ -44,70 +44,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             Assignment4Theme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    CameraCompose(modifier = Modifier.padding(innerPadding) )
                     HomeScreen(modifier = Modifier.padding(innerPadding))
                 }
             }
-        }
-    }
-
-    @SuppressLint("SimpleDateFormat")
-    fun Context.createImageFile(): File {
-        // Create an image file name
-        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
-        val imageFileName = "JPEG_" + timeStamp + "_"
-        val image = File.createTempFile(
-            imageFileName, /* prefix */
-            ".jpg", /* suffix */
-            externalCacheDir /* directory */
-        )
-        return image
-    }
-
-    @Composable
-    fun CameraCompose(modifier: Modifier = Modifier) {
-        val context = LocalContext.current
-        val file = context.createImageFile()
-        val uri = FileProvider.getUriForFile(
-            Objects.requireNonNull(context),
-            context.getPackageName() + ".provider", file
-        )
-        var capturedImageUri by remember {
-            mutableStateOf<Uri>(Uri.EMPTY)
-        }
-        val cameraLauncher =
-            rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
-                capturedImageUri = uri
-            }
-        val permissionLauncher = rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) {
-            cameraLauncher.launch(uri)
-        }
-        Column(
-            modifier = Modifier.padding(100.dp).then(Modifier.fillMaxSize())
-                .then(
-                    Modifier.wrapContentSize(Alignment.BottomEnd)
-                )
-        ) {
-            Button(onClick = {
-                val permissionCheckResult =
-                    ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA)
-                if (permissionCheckResult == PackageManager.PERMISSION_GRANTED) {
-                    cameraLauncher.launch(uri)
-                } else {
-                    // Request a permission
-                    permissionLauncher.launch(android.Manifest.permission.CAMERA)
-                }
-            }) {
-                Text(text = "Photo")
-            }
-        }
-        if (capturedImageUri.path?.isNotEmpty() == true) {
-            AsyncImage(
-                model = capturedImageUri, contentDescription = "photo", modifier = Modifier
-                    .padding(50.dp, 50.dp).fillMaxSize()
-            )
         }
     }
 }
