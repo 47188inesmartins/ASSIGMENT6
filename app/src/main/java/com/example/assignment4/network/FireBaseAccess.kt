@@ -12,17 +12,18 @@ interface DataCallback {
     fun onDataReceived(data: PicturesSavedInformation?)
 }
 
-class FireBaseAccess() {
+class FireBaseAccess {
 
     private val database = Firebase.database
     private val myRef = database.getReference("galo-e38ac")
 
-    fun writeData(marsUrl: String, photoUrl: String, rolls: Int){
+    fun writeData(pictureTake: String, marsUrl: String, photoUrl: String, rolls: Int){
         myRef.setValue(
             PicturesSavedInformation(
                 marsUrl,
                 photoUrl,
-                rolls
+                rolls,
+                pictureTake
             )
         )
     }

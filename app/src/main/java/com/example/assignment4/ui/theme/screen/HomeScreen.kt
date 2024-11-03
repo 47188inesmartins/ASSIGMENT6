@@ -2,6 +2,10 @@ package com.example.assignment4.ui.theme.screen
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import com.example.assignment4.R
 import com.example.assignment4.model.MarsPhoto
 import com.example.assignment4.model.Picture
@@ -21,6 +25,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -49,7 +58,25 @@ fun HomeScreen(
     val uiState = viewModel.marsUiState
     val uiStatePicSum = viewModel.picturesUiState
     val rollsState = viewModel.rollsUiState
+    val context = LocalContext.current
+    var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val file = remember { context.createImageFile() }
 
+    val uri = FileProvider.getUriForFile(
+        Objects.requireNonNull(context),
+        "${context.packageName}.provider", file
+    )
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success) {
+                capturedImageUri = uri
+                viewModel.savePictureTaken(capturedImageUri.toString())
+            }
+        }
+    )
+    Column {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -58,12 +85,18 @@ fun HomeScreen(
     ) {
         Text(text = "Mars Pictures Retrieved: ${uiState.photos.size}")
         if(uiState.currentPhoto != null)
-            MarsPhotoCard(uiState.currentPhoto)
+            MarsPhotoCard(
+                modifier = Modifier.weight(1f),
+                photo = uiState.currentPhoto
+            )
         Text(text = "Pictures Retrieved: ${uiStatePicSum.picturesList.size}")
         if (uiStatePicSum.currentPicture != null)
-            PicPhotoCard(uiStatePicSum.currentPicture)
+            PicPhotoCard(
+                modifier = Modifier.weight(1f),
+                picture = uiStatePicSum.currentPicture)
         Row(
             modifier = Modifier
+                .weight(0.5f)
                 .fillMaxWidth()
                 .padding(top = 16.dp),
             horizontalArrangement = Arrangement.SpaceAround
@@ -76,7 +109,42 @@ fun HomeScreen(
 
         }
         Text(text = "Rolls Retrieved: ${rollsState.rolls}")
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            val permissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) {
+                cameraLauncher.launch(uri)
+            }
 
+            Button(onClick = {
+                val permissionCheckResult = ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.CAMERA
+                )
+                if (permissionCheckResult == PackageManager.PERMISSION_GRANTED) {
+                    cameraLauncher.launch(uri)
+                } else {
+                    permissionLauncher.launch(android.Manifest.permission.CAMERA)
+                }
+            }) {
+                Text(text = "Take Photo")
+            }
+        }
+        if (capturedImageUri != null) {
+            AsyncImage(
+                model = capturedImageUri,
+                contentDescription = "Captured Photo",
+                modifier = Modifier
+                    .size(300.dp)
+                    .padding(16.dp)
+            )
+        }
+    }
     }
 }
 
@@ -136,17 +204,6 @@ fun ActionButton(actionFunction:() -> Unit,actionFunction1:() -> Unit = {}, butt
     }
 }
 
-@Composable
-fun CameraCompose(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val file = context.createImageFile()
-    val uri = FileProvider.getUriForFile(
-        Objects.requireNonNull(context),
-        context.getPackageName() + ".provider", file
-    )
-}
-
-//Auxiliar function to create file name
 @SuppressLint("SimpleDateFormat")
 fun Context.createImageFile(): File {
     // Create an image file name
@@ -159,3 +216,5 @@ fun Context.createImageFile(): File {
     )
     return image
 }
+
+

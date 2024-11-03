@@ -43,14 +43,20 @@ data class NumberOfRolls(
     val rolls: Int = 0
 )
 
+data class PictureTaken(
+    val uri: String = ""
+)
+
 class MarsViewModel(
     private val marsPhotosRepository: MarsPhotosRepository,
-    private val picturesRepository: PictureRepository
+    private val picturesRepository: PictureRepository,
+    //private val localPictureRepository: LocalPictureRepository,
 ) : ViewModel() {
     /** The mutable State that stores the status of the most recent request */
     var marsUiState: MarsUiState by mutableStateOf(MarsUiState())
     var picturesUiState: PicturesUiState by  mutableStateOf(PicturesUiState())
     var rollsUiState: NumberOfRolls by  mutableStateOf(NumberOfRolls())
+    var picTakenUiState: PictureTaken by  mutableStateOf(PictureTaken())
 
     /**
      * Call getMarsPhotos() on init so we can display status immediately.
@@ -116,9 +122,10 @@ class MarsViewModel(
         if (marsUiState.currentPhoto != null && picturesUiState.currentPicture != null){
             FireBaseAccess()
                 .writeData(
+                    picTakenUiState.uri,
                     marsUiState.currentPhoto!!.imgSrc,
                     picturesUiState.currentPicture!!.download_url,
-                    rollsUiState.rolls
+                    rollsUiState.rolls,
                 )
         }
     }
@@ -134,6 +141,7 @@ class MarsViewModel(
                     picturesUiState = picturesUiState.copy(currentPicture = picture)
                     marsUiState = marsUiState.copy(currentPhoto = mars)
                     rollsUiState = rollsUiState.copy(data.rolls)
+                    picTakenUiState = picTakenUiState.copy(data.capturePhoto)
 
                     Log.i("Firebase","Received Data")
                 } else {
@@ -143,17 +151,16 @@ class MarsViewModel(
         })
     }
 
-    val REQUEST_IMAGE_CAPTURE = 1
-
-    private fun dispatchTakePictureIntent() {
-        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        try {
-           // startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
-        } catch (e: ActivityNotFoundException) {
-            // display error state to the user
-        }
+    fun savePictureTaken(uri: String){
+        /*viewModelScope.launch {
+            localPictureRepository.insertPicture(Item(photo = uri))
+        }*/
     }
 
+    suspend fun getPicture(uri: String):String{
+        return ""
+        //return localPictureRepository.getPicture(uri).photo
+    }
     /**
      * Factory for [MarsViewModel] that takes [MarsPhotosRepository] as a dependency
      */
@@ -163,14 +170,16 @@ class MarsViewModel(
                 val application = (this[APPLICATION_KEY] as MarsPhotosApplication)
                 val marsPhotosRepository = application.container.marsPhotosRepository
                 val picsPhotosRepository = application.container.pictureRepository
-
+                /*val roomRepository = LocalPictureRepository(
+                    InventoryDatabase.getDatabase(application).itemDao()
+                )*/
                 MarsViewModel(
                     marsPhotosRepository = marsPhotosRepository,
-                    picturesRepository = picsPhotosRepository
+                    picturesRepository = picsPhotosRepository,
+                    //roomRepository
                 )
             }
         }
     }
-
 
 }
