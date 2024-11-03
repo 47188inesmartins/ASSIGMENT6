@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -138,18 +139,33 @@ fun HomeScreen(
                         .padding(16.dp)
                 )
             }
-            if (pictureTaken.uri.isNotEmpty()) {
+            if (pictureTaken.uri.isNotEmpty() || viewModel.numberSavedLocally.uri.isNotEmpty()) {
                 Box(modifier = Modifier
                     .weight(1f)
                 ) {
-                    AsyncImage(
-                        model = pictureTaken.uri,
-                        contentDescription = "Saved Photo",
-                        modifier = Modifier
-                            .size(300.dp)
-                            .padding(16.dp)
-                    )
-                    Text(text = "Saved Before")
+                    if(pictureTaken.uri.isNotEmpty()){
+                        AsyncImage(
+                            model = pictureTaken.uri,
+                            contentDescription = "Saved Photo",
+                            modifier = Modifier
+                                .size(300.dp)
+                                .padding(16.dp)
+                        )
+                    } else {
+                        AsyncImage(
+                            model = viewModel.numberSavedLocally.uri,
+                            contentDescription = "Saved Photo",
+                            modifier = Modifier
+                                .size(300.dp)
+                                .padding(16.dp)
+                        )
+                    }
+
+                    Column {
+                        Text(text = "Saved Before", fontSize = 14.sp)
+                        if(viewModel.numberSavedLocally.uri.isNotEmpty())
+                            Text(text = "This image saved locally", fontSize = 14.sp)
+                    }
                 }
             }
         }

@@ -5,6 +5,6 @@ import androidx.room.PrimaryKey
 
 @Entity
 data class PhotoEntity (
-    @PrimaryKey val uid: Int = 0,
+    @PrimaryKey(autoGenerate = true) val uid: Int = 0,
     val uri: String?
 )

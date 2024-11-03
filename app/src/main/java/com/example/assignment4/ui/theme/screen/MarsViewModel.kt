@@ -2,6 +2,7 @@ package com.example.assignment4.ui.theme.screen
 
 import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -21,7 +22,9 @@ import com.example.assignment4.model.Picture
 import com.example.assignment4.model.PicturesSavedInformation
 import com.example.assignment4.network.DataCallback
 import com.example.assignment4.network.FireBaseAccess
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 /**
@@ -45,6 +48,10 @@ data class PictureTaken(
     val uri: String = ""
 )
 
+data class PictureTakenLocally(
+    val uri: String = ""
+)
+
 class MarsViewModel(
     private val marsPhotosRepository: MarsPhotosRepository,
     private val picturesRepository: PictureRepository,
@@ -55,6 +62,7 @@ class MarsViewModel(
     var picturesUiState: PicturesUiState by  mutableStateOf(PicturesUiState())
     var rollsUiState: NumberOfRolls by  mutableStateOf(NumberOfRolls())
     var picTakenUiState: PictureTaken by  mutableStateOf(PictureTaken())
+    var numberSavedLocally: PictureTakenLocally by  mutableStateOf(PictureTakenLocally())
 
     /**
      * Call getMarsPhotos() on init so we can display status immediately.
@@ -62,6 +70,7 @@ class MarsViewModel(
     init {
         getMarsPhotos()
         getPictures()
+        getPictureNumber()
     }
 
     /**
@@ -118,6 +127,7 @@ class MarsViewModel(
 
     fun savePicture(){
         if (marsUiState.currentPhoto != null && picturesUiState.currentPicture != null){
+            Log.i("Firebase123", picTakenUiState.uri)
             FireBaseAccess()
                 .writeData(
                     picTakenUiState.uri,
@@ -144,7 +154,7 @@ class MarsViewModel(
                     marsUiState = marsUiState.copy(currentPhoto = mars)
                     rollsUiState = rollsUiState.copy(rolls = data.rolls)
                     picTakenUiState = picTakenUiState.copy(uri = data.capturePhoto)
-
+                    Log.i("Firebase123", picTakenUiState.uri)
                     Log.i("Firebase","Received Data")
                 } else {
                     Log.i("Firebase","Not received Data")
@@ -155,12 +165,27 @@ class MarsViewModel(
 
     fun savePictureTaken(uri: String){
         viewModelScope.launch {
-            localPictureRepository.insertPhoto(PhotoEntity(uri = uri))
+            withContext(Dispatchers.IO) {
+                localPictureRepository.insertPhoto(PhotoEntity(uri = uri))
+                Log.i("Picture Room", "Saved on local database")
+            }
         }
     }
 
-    fun getPicture(uri: String):String{
-        return localPictureRepository.getAll().last().uri?:""
+    private fun getPictureNumber(){
+        viewModelScope.launch {
+            val lastPicture = withContext(Dispatchers.IO) {
+                val allPictures = localPictureRepository.getAll()
+                    if (allPictures.isNotEmpty()) {
+                        allPictures.last().uri ?: ""
+                    }else{
+                        ""
+                    }
+            }
+
+            numberSavedLocally = PictureTakenLocally(uri = lastPicture)
+            Log.i("Picture Room", "Last image saved: $lastPicture")
+        }
     }
 
     /**
