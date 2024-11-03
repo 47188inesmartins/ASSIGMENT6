@@ -13,6 +13,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.assignment4.MarsPhotosApplication
 import com.example.assignment4.data.MarsPhotosRepository
 import com.example.assignment4.data.PictureRepository
+import com.example.assignment4.localStore.AppDatabase
+import com.example.assignment4.localStore.PhotoDao
+import com.example.assignment4.localStore.PhotoEntity
 import com.example.assignment4.model.MarsPhoto
 import com.example.assignment4.model.Picture
 import com.example.assignment4.model.PicturesSavedInformation
@@ -45,7 +48,7 @@ data class PictureTaken(
 class MarsViewModel(
     private val marsPhotosRepository: MarsPhotosRepository,
     private val picturesRepository: PictureRepository,
-    //private val localPictureRepository: LocalPictureRepository,
+    private val localPictureRepository: PhotoDao,
 ) : ViewModel() {
     /** The mutable State that stores the status of the most recent request */
     var marsUiState: MarsUiState by mutableStateOf(MarsUiState())
@@ -151,15 +154,15 @@ class MarsViewModel(
     }
 
     fun savePictureTaken(uri: String){
-        /*viewModelScope.launch {
-            localPictureRepository.insertPicture(Item(photo = uri))
-        }*/
+        viewModelScope.launch {
+            localPictureRepository.insertPhoto(PhotoEntity(uri = uri))
+        }
     }
 
-    suspend fun getPicture(uri: String):String{
-        return ""
-        //return localPictureRepository.getPicture(uri).photo
+    fun getPicture(uri: String):String{
+        return localPictureRepository.getAll().last().uri?:""
     }
+
     /**
      * Factory for [MarsViewModel] that takes [MarsPhotosRepository] as a dependency
      */
@@ -169,13 +172,11 @@ class MarsViewModel(
                 val application = (this[APPLICATION_KEY] as MarsPhotosApplication)
                 val marsPhotosRepository = application.container.marsPhotosRepository
                 val picsPhotosRepository = application.container.pictureRepository
-                /*val roomRepository = LocalPictureRepository(
-                    InventoryDatabase.getDatabase(application).itemDao()
-                )*/
+                val roomRepository = application.offlineContainer
                 MarsViewModel(
                     marsPhotosRepository = marsPhotosRepository,
                     picturesRepository = picsPhotosRepository,
-                    //roomRepository
+                    roomRepository
                 )
             }
         }
